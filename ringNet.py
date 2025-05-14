@@ -1,13 +1,18 @@
 import socket
 import time
 import json
+import random
 import sys
 
 # Porta única usada por todos os jogadores
-PORT = 5000
+PORT = 31204
 
 # Obtém o ID do jogador (0 a 3) passado por argumento
 player_id = int(sys.argv[1])
+
+# Lista das cartas do baralho
+naipes = ["ouros", "copas", "espadas", "paus"]
+cartas = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
 # Lista de IPs dos jogadores na ordem do anel
 players = [
@@ -29,8 +34,25 @@ print(f"Jogador {player_id} iniciado em {MY_IP}:{MY_PORT}. Aguardando bastão...
 
 # Apenas o jogador 0 cria o bastão no início
 if player_id == 0:
+    deck = [carta + naipe for carta in cartas for naipe in naipes] #junta cada carta com um naipe
+    random.shuffle(deck);
+    hands = {
+        0: deck[0:13],
+        1: deck[13:26],
+        2: deck[26:39],
+        3: deck[39:52]
+    }
+    print(f"[{player_id}] Cartas distribuídas.")
+
     time.sleep(10)  # Espera os outros iniciarem
-    token = {"type": "token"}
+    token = {
+        "type": "token",
+        "round": 1,
+        "plays": [],
+        "scores": [0, 0, 0, 0],
+        "starter": 0,
+        "hands": hands
+    }
     sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
 
 # Loop principal de recebimento de mensagens
@@ -40,9 +62,10 @@ while True:
 
     # Quando receber o bastão
     if message["type"] == "token":
-        print(f"[{player_id}] Recebi o bastão! Executando ação...")
-
         # Aqui entrará a lógica do jogo Copas
+        if "hands" in message:
+            my_hand = message["hands"][str(player_id)] if isinstance(message["hands"], dict) else message["hands"][player_id]
+            print(f"[{player_id}] Minhas cartas: {my_hand}")
 
         time.sleep(2)  # Tempo com o bastão
         print(f"[{player_id}] Passando o bastão...")
