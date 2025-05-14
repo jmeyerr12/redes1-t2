@@ -3,41 +3,47 @@ import time
 import json
 import sys
 
-# Argumentos: meu_id de 0 a 3
-meu_id = int(sys.argv[1])
+# Porta única usada por todos os jogadores
+PORT = 5000
 
-# Lista de IPs e portas
-jogadores = [
-    ("10.254.225.24", 5000),  # Jogador 0
-    ("10.254.225.25", 5000),  # Jogador 1
-    ("10.254.225.26", 5000),  # Jogador 2
-    ("10.254.225.27", 5000),  # Jogador 3
+# Obtém o ID do jogador (0 a 3) passado por argumento
+player_id = int(sys.argv[1])
+
+# Lista de IPs dos jogadores na ordem do anel
+players = [
+    ("10.254.225.24", PORT),  # Jogador 0
+    ("10.254.225.25", PORT),  # Jogador 1
+    ("10.254.225.26", PORT),  # Jogador 2
+    ("10.254.225.27", PORT),  # Jogador 3
 ]
 
-MEU_IP, MEU_PORTA = jogadores[meu_id]
-PROXIMO_IP, PROXIMO_PORTA = jogadores[(meu_id + 1) % 4]
+# Define meu IP e IP do próximo jogador no anel
+MY_IP, MY_PORT = players[player_id]
+NEXT_IP, NEXT_PORT = players[(player_id + 1) % 4]
 
+# Cria socket UDP e associa à porta
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((MEU_IP, MEU_PORTA))
+sock.bind((MY_IP, MY_PORT))
 
-print(f"Jogador {meu_id} iniciado. Esperando bastão...")
+print(f"Jogador {player_id} iniciado em {MY_IP}:{MY_PORT}. Aguardando bastão...")
 
-# Só o jogador 0 cria o bastão
-if meu_id == 0:
-    time.sleep(2)
-    bastao = {"tipo": "token"}
-    sock.sendto(json.dumps(bastao).encode(), (PROXIMO_IP, PROXIMO_PORTA))
+# Apenas o jogador 0 cria o bastão no início
+if player_id == 0:
+    time.sleep(10)  # Espera os outros iniciarem
+    token = {"type": "token"}
+    sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
 
-# Loop principal
+# Loop principal de recebimento de mensagens
 while True:
     data, addr = sock.recvfrom(1024)
-    msg = json.loads(data.decode())
+    message = json.loads(data.decode())
 
-    if msg["tipo"] == "token":
-        print(f"[{meu_id}] Recebi o bastão! Executando ação...")
+    # Quando receber o bastão
+    if message["type"] == "token":
+        print(f"[{player_id}] Recebi o bastão! Executando ação...")
 
-        # Aqui entra lógica do jogo Copas (a ser feita na próxima fase)
+        # Aqui entrará a lógica do jogo Copas
 
         time.sleep(2)  # Tempo com o bastão
-        print(f"[{meu_id}] Passando o bastão...")
-        sock.sendto(json.dumps(msg).encode(), (PROXIMO_IP, PROXIMO_PORTA))
+        print(f"[{player_id}] Passando o bastão...")
+        sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
