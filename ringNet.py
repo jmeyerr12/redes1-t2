@@ -127,7 +127,7 @@ while True:
             message["scores"][vencedor] += pontos
             print(f"[{player_id}] Placar: {message['scores']}")
 
-            message["starter"] = vencedor
+            message["starter"] = vencedor #fazer rodar todos os jogadores na rede até encontrar o starter enquanto plays=[]
             message["round"] += 1
             message["plays"] = []
 
