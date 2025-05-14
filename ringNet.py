@@ -6,37 +6,90 @@ import sys
 
 PORT = 31204
 player_id = int(sys.argv[1])
+
 naipes = ["ouros", "copas", "espadas", "paus"]
-cartas = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+valores = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+
 players = [
-    ("10.254.225.25", PORT),  # Jogador 0
-    ("10.254.225.26", PORT),  # Jogador 1
-    ("10.254.225.27", PORT),  # Jogador 2
-    ("10.254.225.28", PORT),  # Jogador 3
+    ("10.254.225.25", PORT),
+    ("10.254.225.26", PORT),
+    ("10.254.225.27", PORT),
+    ("10.254.225.28", PORT),
 ]
 
-#define meu IP e IP do próximo jogador no anel
 MY_IP, MY_PORT = players[player_id]
 NEXT_IP, NEXT_PORT = players[(player_id + 1) % 4]
 
-#cria socket e coloca entre os jogadores
+ordem_cartas = {
+    "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+    "8": 8, "9": 9, "10": 10, "J": 11, "Q": 12, "K": 13, "A": 14
+}
+
+
+def extrair_valor_naipe(carta):
+    for valor in ordem_cartas:
+        if carta.startswith(valor):
+            naipe = carta[len(valor):]
+            return valor, naipe
+    return None, None
+
+
+def distribuir_cartas():
+    baralho = [valor + naipe for valor in valores for naipe in naipes]
+    random.shuffle(baralho)
+    return {
+        0: baralho[0:13],
+        1: baralho[13:26],
+        2: baralho[26:39],
+        3: baralho[39:52]
+    }
+
+
+def jogar_carta_interativamente(mao):
+    while True:
+        print(f"[{player_id}] Sua mão: {mao}")
+        carta = input(f"[{player_id}] Digite a carta que deseja jogar (ex: 5copas): ").strip()
+        if carta in mao:
+            mao.remove(carta)
+            return carta
+        print(f"[{player_id}] Você não tem essa carta. Tente novamente.")
+
+
+def calcular_vencedor_e_pontos(plays):
+    valor_base, naipe_base = extrair_valor_naipe(plays[0]["card"])
+    melhor_jogada = None
+    maior_valor = -1
+
+    for jogada in plays:
+        valor, naipe = extrair_valor_naipe(jogada["card"])
+        if naipe == naipe_base:
+            if ordem_cartas[valor] > maior_valor:
+                maior_valor = ordem_cartas[valor]
+                melhor_jogada = jogada
+
+    vencedor = melhor_jogada["player"]
+    pontos = 0
+    for jogada in plays:
+        valor, naipe = extrair_valor_naipe(jogada["card"])
+        if naipe == "copas":
+            pontos += 1
+        if jogada["card"] == "Qespadas":
+            pontos += 13
+
+    return vencedor, pontos
+
+
+# -- MAIN --
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((MY_IP, MY_PORT))
+
 print(f"Jogador {player_id} iniciado em {MY_IP}:{MY_PORT}. Aguardando bastão...")
 
-#apenas o jogador 0 cria o bastão no início
 if player_id == 0:
-    deck = [carta + naipe for carta in cartas for naipe in naipes] #junta cada carta com um naipe
-    random.shuffle(deck);
-    hands = {
-        0: deck[0:13],
-        1: deck[13:26],
-        2: deck[26:39],
-        3: deck[39:52]
-    }
+    hands = distribuir_cartas()
     print(f"[{player_id}] Cartas distribuídas.")
 
-    time.sleep(10)  #espera os outros iniciarem (pra garantir que da certo rode o 0 por ultimo)
+    time.sleep(10)
     token = {
         "type": "token",
         "round": 1,
@@ -47,47 +100,37 @@ if player_id == 0:
     }
     sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
 
-#loop principal de recebimento de mensagens
+my_hand = None
+
 while True:
-    data, addr = sock.recvfrom(1024)
+    data, _ = sock.recvfrom(1024)
     message = json.loads(data.decode())
 
-    #quando recebe o bastao
     if message["type"] == "token":
-        if "hands" in message:
-            my_hand = message["hands"][str(player_id)] if isinstance(message["hands"], dict) else message["hands"][player_id]
-            print(f"[{player_id}] Minhas cartas: {my_hand}")
+        if my_hand is None and "hands" in message:
+            my_hand = message["hands"][str(player_id)]
 
         ja_joguei = any(play["player"] == player_id for play in message["plays"])
 
-        # Loop até o jogador digitar uma carta válida
-        while True:
-            print(f"[{player_id}] Sua mão: {my_hand}")
-            carta_escolhida = input(f"[{player_id}] Digite a carta que deseja jogar exatamente como ela aparece (ex: 5copas): ").strip()
+        if not ja_joguei:
+            carta = jogar_carta_interativamente(my_hand)
+            print(f"[{player_id}] Jogando: {carta}")
+            message["plays"].append({"player": player_id, "card": carta})
 
-            if carta_escolhida in my_hand:
-                my_hand.remove(carta_escolhida)
-                print(f"[{player_id}] Jogando: {carta_escolhida}")
-                message["plays"].append({
-                    "player": player_id,
-                    "card": carta_escolhida
-                })
-                break
-            else:
-                print(f"[{player_id}] Você não tem essa carta! Tente novamente.")
-
-
-        # Se for o 4º a jogar, fecha a rodada
         if len(message["plays"]) == 4:
             print(f"[{player_id}] Rodada {message['round']} completa.")
             print("Jogadas:", message["plays"])
 
-            # (Aqui futuramente entra a lógica para calcular o vencedor e pontuação)
+            vencedor, pontos = calcular_vencedor_e_pontos(message["plays"])
+            print(f"[{player_id}] Jogador {vencedor} venceu a rodada e ganhou {pontos} pontos.")
 
-            # Prepara próxima rodada
+            message["scores"][vencedor] += pontos
+            print(f"[{player_id}] Placar: {message['scores']}")
+
+            message["starter"] = vencedor
             message["round"] += 1
             message["plays"] = []
 
-        time.sleep(2)  # Tempo com o bastão
+        time.sleep(2)
         print(f"[{player_id}] Passando o bastão...")
         sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
