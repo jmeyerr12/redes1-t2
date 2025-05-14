@@ -9,10 +9,10 @@ player_id = int(sys.argv[1])
 naipes = ["ouros", "copas", "espadas", "paus"]
 cartas = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 players = [
-    ("10.254.225.24", PORT),  # Jogador 0
-    ("10.254.225.25", PORT),  # Jogador 1
-    ("10.254.225.26", PORT),  # Jogador 2
-    ("10.254.225.27", PORT),  # Jogador 3
+    ("10.254.225.25", PORT),  # Jogador 0
+    ("10.254.225.26", PORT),  # Jogador 1
+    ("10.254.225.27", PORT),  # Jogador 2
+    ("10.254.225.28", PORT),  # Jogador 3
 ]
 
 #define meu IP e IP do próximo jogador no anel
