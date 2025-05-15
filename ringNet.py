@@ -45,13 +45,28 @@ def distribuir_cartas():
     }
 
 
-def jogar_carta_interativamente(mao):
+def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
     while True:
         print(f"[{player_id}] Sua mão: {mao}")
-        carta = input(f"[{player_id}] Digite a carta que deseja jogar (ex: 5copas): ").strip()
+        carta = input(f"[{player_id}] Digite a carta que deseja jogar (ex: 5paus): ").strip()
+        vetor_de_naipes = []
+        for (card in mao):
+            _,naipe = extrair_valor_naipe(card)
+            vetor_de_naipes += naipe 
+
+        so_tem_copas = all(n == "copas" for n in naipes)
+
         if carta in mao:
+            _,naipe_da_carta = extrair_valor_naipe(carta)
+            if "2paus" in mao and carta != "2paus":
+                print(f"[{player_id}] Só é possivel iniciar uma partida com a carta 2paus.")
+                continue
+            elif is_primeiro and naipe_da_carta = "copas" and not copas_no_jogo and not so_tem_copas:
+                print(f"[{player_id}] O copas ainda não foi quebrado e você ainda tem cartas que não sejam de copas. Não é possivel iniciar com copas")
+                continue
             mao.remove(carta)
-            return carta
+            is_copas_jogado = (naipe_da_carta == copas)
+            return carta, is_copas_jogado
         print(f"[{player_id}] Você não tem essa carta. Tente novamente.")
 
 
@@ -113,12 +128,12 @@ if player_id == 0:
         "collected": [[], [], [], []],
         "starter": 0,
         "hands": hands,
+        "copas_ja_jogado": False,
         "gameover": False
     }
     sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
 
 my_hand = None
-
 # loop principal
 while True:
     data, _ = sock.recvfrom(1024)
@@ -140,21 +155,26 @@ while True:
         if message["round"] == 0 and "2paus" in my_hand:
             message["starter"] = player_id
             message["round"] += 1
+            rint(f"[{player_id}] Primeiro jogador encontrado - jogador {player_id}...")
 
         # se a partida ta comecando agora e voce nao eh o primeiro a jogar, ou mesmo o primeiro jogador ainda nao foi encontrado, pula sua vez
         if (message["starter"] != player_id and len(message["plays"]) == 0) or message["round"] == 0:
             time.sleep(2)
-            print(f"[{player_id}] Passando o bastão...")
+            print(f"[{player_id}] Procurando primeiro jogador...")
             sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
             continue
 
         ja_joguei = any(play["player"] == player_id for play in message["plays"])
 
         if not ja_joguei:
-            carta = jogar_carta_interativamente(my_hand)
+            _, naipe_da_mesa = extrair_valor_naipe(message["plays"][0]["card"]) 
+            carta, copas_jogado = jogar_carta_interativamente(my_hand, naipe_da_mesa, message["copas_ja_jogado"], message["starter"] == player_id)
+            if copas_jogado:
+                message["copas_ja_jogado"] = True
             print(f"[{player_id}] Jogando: {carta}")
             message["plays"].append({"player": player_id, "card": carta})
 
+        # fim da rodada
         if len(message["plays"]) == 4:
             print(f"[{player_id}] Rodada {message['round']} completa.")
             print("Jogadas:", message["plays"])
