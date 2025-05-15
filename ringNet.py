@@ -52,7 +52,7 @@ def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
         vetor_de_naipes = []
         for card in mao:
             _,naipe = extrair_valor_naipe(card)
-            vetor_de_naipes += naipe 
+            vetor_de_naipes.append(naipe)
 
         so_tem_copas = all(n == "copas" for n in vetor_de_naipes)
 
@@ -68,7 +68,7 @@ def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
                 print(f"[{player_id}] Você ainda tem cartas com o naipe da mesa.")
                 continue
             mao.remove(carta)
-            is_copas_jogado = (naipe_da_carta == copas)
+            is_copas_jogado = (naipe_da_carta == "copas")
             return carta, is_copas_jogado
         print(f"[{player_id}] Você não tem essa carta. Tente novamente.")
 
@@ -173,8 +173,9 @@ while True:
         if not ja_joguei:
             if message["plays"]:
                 _, naipe_da_mesa = extrair_valor_naipe(message["plays"][0]["card"])
-            carta, copas_jogado = jogar_carta_interativamente(my_hand, naipe_da_mesa, message["copas_ja_jogado"], message["starter"] == player_id)
-            if (player_id == message["starter"])
+
+            carta, copas_jogado = jogar_carta_interativamente(my_hand, naipe_da_mesa, message["copas_ja_jogado"], (message["starter"] == player_id))
+            if (player_id == message["starter"]):
                 _,naipe_carta = extrair_valor_naipe(carta)
                 naipe_da_mesa = naipe_carta
             if copas_jogado:
