@@ -146,6 +146,7 @@ while True:
             time.sleep(2)
             print(f"[{player_id}] Passando o bastão...")
             sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
+            continue
 
         ja_joguei = any(play["player"] == player_id for play in message["plays"])
 
