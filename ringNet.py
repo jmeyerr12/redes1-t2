@@ -11,10 +11,10 @@ naipes = ["ouros", "copas", "espadas", "paus"]
 valores = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
 players = [
-    ("10.254.225.25", PORT),
-    ("10.254.225.26", PORT),
-    ("10.254.225.27", PORT),
-    ("10.254.225.28", PORT),
+    ("10.254.225.14", PORT),
+    ("10.254.225.15", PORT),
+    ("10.254.225.16", PORT),
+    ("10.254.225.18", PORT),
 ]
 
 MY_IP, MY_PORT = players[player_id]
@@ -50,19 +50,22 @@ def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
         print(f"[{player_id}] Sua mão: {mao}")
         carta = input(f"[{player_id}] Digite a carta que deseja jogar (ex: 5paus): ").strip()
         vetor_de_naipes = []
-        for (card in mao):
+        for card in mao:
             _,naipe = extrair_valor_naipe(card)
             vetor_de_naipes += naipe 
 
-        so_tem_copas = all(n == "copas" for n in naipes)
+        so_tem_copas = all(n == "copas" for n in vetor_de_naipes)
 
         if carta in mao:
             _,naipe_da_carta = extrair_valor_naipe(carta)
             if "2paus" in mao and carta != "2paus":
                 print(f"[{player_id}] Só é possivel iniciar uma partida com a carta 2paus.")
                 continue
-            elif is_primeiro and naipe_da_carta = "copas" and not copas_no_jogo and not so_tem_copas:
+            elif is_primeiro and naipe_da_carta == "copas" and not copas_no_jogo and not so_tem_copas:
                 print(f"[{player_id}] O copas ainda não foi quebrado e você ainda tem cartas que não sejam de copas. Não é possivel iniciar com copas")
+                continue
+            elif not is_primeiro and naipe_da_carta != naipe_da_mesa and any(n == naipe_da_mesa for n in vetor_de_naipes):
+                print(f"[{player_id}] Você ainda tem cartas com o naipe da mesa.")
                 continue
             mao.remove(carta)
             is_copas_jogado = (naipe_da_carta == copas)
@@ -134,6 +137,7 @@ if player_id == 0:
     sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
 
 my_hand = None
+naipe_da_mesa = None
 # loop principal
 while True:
     data, _ = sock.recvfrom(1024)
@@ -155,7 +159,7 @@ while True:
         if message["round"] == 0 and "2paus" in my_hand:
             message["starter"] = player_id
             message["round"] += 1
-            rint(f"[{player_id}] Primeiro jogador encontrado - jogador {player_id}...")
+            print(f"[{player_id}] Primeiro jogador encontrado - jogador {player_id}...")
 
         # se a partida ta comecando agora e voce nao eh o primeiro a jogar, ou mesmo o primeiro jogador ainda nao foi encontrado, pula sua vez
         if (message["starter"] != player_id and len(message["plays"]) == 0) or message["round"] == 0:
@@ -167,8 +171,12 @@ while True:
         ja_joguei = any(play["player"] == player_id for play in message["plays"])
 
         if not ja_joguei:
-            _, naipe_da_mesa = extrair_valor_naipe(message["plays"][0]["card"]) 
+            if message["plays"]:
+                _, naipe_da_mesa = extrair_valor_naipe(message["plays"][0]["card"])
             carta, copas_jogado = jogar_carta_interativamente(my_hand, naipe_da_mesa, message["copas_ja_jogado"], message["starter"] == player_id)
+            if (player_id == message["starter"])
+                _,naipe_carta = extrair_valor_naipe(carta)
+                naipe_da_mesa = naipe_carta
             if copas_jogado:
                 message["copas_ja_jogado"] = True
             print(f"[{player_id}] Jogando: {carta}")
