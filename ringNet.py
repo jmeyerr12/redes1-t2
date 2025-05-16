@@ -12,10 +12,10 @@ naipes = ["ouros", "copas", "espadas", "paus"]
 valores = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
 players = [
-    ("10.254.225.14", PORT),
     ("10.254.225.15", PORT),
     ("10.254.225.16", PORT),
     ("10.254.225.18", PORT),
+    ("10.254.225.19", PORT),
 ]
 
 MY_IP, MY_PORT = players[player_id]
@@ -59,7 +59,6 @@ def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
 
         # se so tiver copas, pode iniciar com copas mesmo sem o copas ter sido quebrado
         so_tem_copas = all(n == "copas" for n in vetor_de_naipes)
-        print(f"[{player_id}] Naipe da mesa é [{naipe_da_mesa}]")
 
         if carta in mao:
             _,naipe_da_carta = extrair_valor_naipe(carta)
@@ -76,6 +75,7 @@ def jogar_carta_interativamente(mao, naipe_da_mesa, copas_no_jogo, is_primeiro):
             # pessoa eh obrigada a jogar carta do naipe da mesa SE tiver uma carta desse naipe
             elif not is_primeiro and naipe_da_carta != naipe_da_mesa and any(n == naipe_da_mesa for n in vetor_de_naipes):
                 print(f"[{player_id}] Você ainda tem cartas com o naipe da mesa.")
+                print(f"[{player_id}] Naipe da mesa é [{naipe_da_mesa}]")
                 continue
             
             mao.remove(carta)
