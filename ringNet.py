@@ -162,7 +162,7 @@ my_hand = None
 naipe_da_mesa = None
 # loop principal
 while True:
-    data, _ = sock.recvfrom(1024)
+    data, _ = sock.recvfrom(2048)
     message = json.loads(data.decode())
 
     if message["type"] == "token":
