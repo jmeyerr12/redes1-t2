@@ -12,14 +12,14 @@ naipes = ["ouros", "copas", "espadas", "paus"]
 valores = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
 players = [
-    ("10.254.225.26", PORT),
-    ("10.254.225.27", PORT),
-    ("10.254.225.28", PORT),
-    ("10.254.225.29", PORT),
+    "10.254.225.12",
+    "10.254.225.10",
+    "10.254.225.6",
+    "10.254.225.14",
 ]
 
-MY_IP, MY_PORT = players[player_id]
-NEXT_IP, NEXT_PORT = players[(player_id + 1) % 4]
+MY_IP = players[player_id]
+NEXT_IP = players[(player_id + 1) % 4]
 
 ordem_cartas = {
     "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
@@ -134,9 +134,9 @@ def contar_pontos_todos(coletadas_por_jogador):
 
 # -- MAIN --
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((MY_IP, MY_PORT))
+sock.bind((MY_IP, PORT))
 
-print(f"Jogador {player_id} iniciado em {MY_IP}:{MY_PORT}. Aguardando bastão...")
+print(f"Jogador {player_id} iniciado em {MY_IP}:{PORT}. Aguardando bastão...")
 
 # inicialmente, o player 0 cria o bastao inicial e embaralha as cartas
 # posteriormente, esse processo eh feito por qualquer pessoa que estiver terminando a rodada
@@ -156,7 +156,7 @@ if player_id == 0:
         "copas_ja_jogado": False,
         "gameover": False
     }
-    sock.sendto(json.dumps(token).encode(), (NEXT_IP, NEXT_PORT))
+    sock.sendto(json.dumps(token).encode(), (NEXT_IP, PORT))
 
 my_hand = None
 naipe_da_mesa = None
@@ -170,7 +170,7 @@ while True:
         if message["gameover"] == True:
             print(f"[{player_id}] Jogo encerrado - um dos jogadores chegou a 100 pontos ou mais. Placar final: {message['scores']}")
             time.sleep(2)
-            sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
+            sock.sendto(json.dumps(message).encode(), (NEXT_IP, PORT))
             break
 
         # obtem as cartas
@@ -187,7 +187,7 @@ while True:
         if (message["starter"] != player_id and len(message["plays"]) == 0) or message["round"] == 0:
             time.sleep(2)
             print(f"[{player_id}] Procurando primeiro jogador...")
-            sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
+            sock.sendto(json.dumps(message).encode(), (NEXT_IP, PORT))
             continue
 
         ja_joguei = any(play["player"] == player_id for play in message["plays"])
@@ -240,4 +240,4 @@ while True:
 
         time.sleep(2)
         print(f"[{player_id}] Passando o bastão...")
-        sock.sendto(json.dumps(message).encode(), (NEXT_IP, NEXT_PORT))
+        sock.sendto(json.dumps(message).encode(), (NEXT_IP, PORT))
