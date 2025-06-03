@@ -218,7 +218,6 @@ while True:
             message["round"] += 1
             message["plays"] = []
             message["starter"] = perdedor # quem perde uma rodada, inicia a proxima
-            message["copas_ja_jogado"] = False
 
         # round 14 quer dizer que todos ja jogaram todas as suas cartas, ou seja, precisamos resetar os dados atuais
         if message["round"] == 14:
@@ -237,6 +236,7 @@ while True:
             message["hands"] = novasMaos
             message["round"] = 0
             message["collected"] = [[], [], [], []]
+            message["copas_ja_jogado"] = False
 
         time.sleep(2)
         print(f"[{player_id}] Passando o bastão...")
