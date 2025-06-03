@@ -174,7 +174,7 @@ while True:
             break
 
         # obtem as cartas
-        if my_hand is None and "hands" in message:
+        if (my_hand is None or len(my_hand) == 0) and "hands" in message:
             my_hand = message["hands"][str(player_id)]
 
         # define primeiro jogador no estado inicial do jogo
